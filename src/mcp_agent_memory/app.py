@@ -17,7 +17,6 @@ from typing import Callable
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.security import APIKeyHeader
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response as StarletteResponse
 from mcp.server.fastmcp import FastMCP
@@ -170,36 +169,56 @@ def get_file_stats() -> dict:
 
 
 # =============================================================================
-# Authentication Middleware for MCP
+# Authentication Middleware for MCP (Pure ASGI - SSE compatible)
 # =============================================================================
 
-class APIKeyAuthMiddleware(BaseHTTPMiddleware):
-    """Middleware to authenticate requests via X-API-Key header."""
+class APIKeyAuthMiddleware:
+    """Pure ASGI middleware to authenticate requests via X-API-Key header.
 
-    async def dispatch(
-        self, request: StarletteRequest, call_next: Callable
-    ) -> StarletteResponse:
-        client_ip = request.client.host if request.client else "unknown"
+    Uses pure ASGI interface instead of BaseHTTPMiddleware for SSE compatibility.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # Extract headers
+        headers = dict(scope.get("headers", []))
+        api_key = headers.get(b"x-api-key", b"").decode()
+
+        # Get client IP
+        client = scope.get("client")
+        client_ip = client[0] if client else "unknown"
 
         # Check API key
-        api_key = request.headers.get("X-API-Key")
         if api_key != API_KEY:
             audit_logger.warning(f"MCP_AUTH_FAILED - IP: {client_ip}")
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=403,
                 content={"error": "Invalid or missing API Key"}
             )
+            await response(scope, receive, send)
+            return
 
         # Check rate limit
         if not check_rate_limit(client_ip):
             audit_logger.warning(f"MCP_RATE_LIMITED - IP: {client_ip}")
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=429,
                 content={"error": "Rate limit exceeded"}
             )
+            await response(scope, receive, send)
+            return
 
-        audit_logger.info(f"MCP_REQUEST - IP: {client_ip} - Path: {request.url.path}")
-        return await call_next(request)
+        # Get path for logging
+        path = scope.get("path", "")
+        audit_logger.info(f"MCP_REQUEST - IP: {client_ip} - Path: {path}")
+
+        await self.app(scope, receive, send)
 
 
 # =============================================================================
