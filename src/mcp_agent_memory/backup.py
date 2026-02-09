@@ -142,7 +142,8 @@ def backup_to_gdrive() -> Optional[str]:
         file = service.files().create(
             body=file_metadata,
             media_body=media,
-            fields="id, name, size, createdTime"
+            fields="id, name, size, createdTime",
+            supportsAllDrives=True
         ).execute()
 
         logger.info(
@@ -189,7 +190,9 @@ def cleanup_old_backups(days_to_keep: int = BACKUP_RETENTION_DAYS) -> int:
         results = service.files().list(
             q=query,
             fields="files(id, name, createdTime)",
-            orderBy="createdTime asc"
+            orderBy="createdTime asc",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True
         ).execute()
 
         files_to_delete = results.get("files", [])
@@ -201,7 +204,7 @@ def cleanup_old_backups(days_to_keep: int = BACKUP_RETENTION_DAYS) -> int:
         deleted_count = 0
         for file in files_to_delete:
             try:
-                service.files().delete(fileId=file["id"]).execute()
+                service.files().delete(fileId=file["id"], supportsAllDrives=True).execute()
                 logger.info(
                     f"Deleted old backup: {file['name']} "
                     f"(created: {file['createdTime']})"
@@ -239,7 +242,9 @@ def list_backups() -> list:
         results = service.files().list(
             q=query,
             fields="files(id, name, size, createdTime)",
-            orderBy="createdTime desc"
+            orderBy="createdTime desc",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True
         ).execute()
 
         files = results.get("files", [])
