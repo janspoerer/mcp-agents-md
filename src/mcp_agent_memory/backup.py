@@ -97,7 +97,7 @@ def get_drive_service():
         )
 
     creds = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        SERVICE_ACCOUNT_FILE, scopes=GDRIVE_SCOPES
     )
     return build("drive", "v3", credentials=creds)
 
