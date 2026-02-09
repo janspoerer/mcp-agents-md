@@ -18,6 +18,7 @@ from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.security import APIKeyHeader
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response as StarletteResponse
 from mcp.server.fastmcp import FastMCP
@@ -300,6 +301,9 @@ app = FastAPI(
 # Create MCP SSE app and add auth middleware
 # The SSE app is the standard way to expose MCP over HTTP
 mcp_sse_app = mcp.sse_app()
+
+# Allow all hosts since we're behind a reverse proxy and security is via API key
+mcp_sse_app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 mcp_sse_app.add_middleware(APIKeyAuthMiddleware)
 
 # Mount the secured MCP app
