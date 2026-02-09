@@ -18,10 +18,10 @@ from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.security import APIKeyHeader
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response as StarletteResponse
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from dotenv import load_dotenv
 
 # =============================================================================
@@ -239,6 +239,11 @@ mcp = FastMCP(
         "This server provides shared persistent memory for AI agents. "
         "Use read_memory to retrieve stored knowledge and write_memory to add new learnings. "
         "All writes are timestamped and append-only to preserve history."
+    ),
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=["localhost:*", "127.0.0.1:*", "agents-md.spoerico.com:*", "agents-md.spoerico.com"],
+        allowed_origins=["https://agents-md.spoerico.com", "https://agents-md.spoerico.com:*"],
     )
 )
 
@@ -302,8 +307,6 @@ app = FastAPI(
 # The SSE app is the standard way to expose MCP over HTTP
 mcp_sse_app = mcp.sse_app()
 
-# Allow all hosts since we're behind a reverse proxy and security is via API key
-mcp_sse_app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 mcp_sse_app.add_middleware(APIKeyAuthMiddleware)
 
 # Mount the secured MCP app
