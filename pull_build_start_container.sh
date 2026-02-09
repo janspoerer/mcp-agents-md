@@ -207,13 +207,23 @@ CPUS=1.0
 echo ""
 echo "Starting container: $CONTAINER_NAME on port $PORT"
 
+# Check for service account file for Google Drive backups
+SERVICE_ACCOUNT_FILE="${CREDENTIALS_DIR}/service_account.json"
+SERVICE_ACCOUNT_MOUNT=""
+if [ -f "$SERVICE_ACCOUNT_FILE" ]; then
+    echo "Found service account file for Google Drive backups"
+    SERVICE_ACCOUNT_MOUNT="-v ${SERVICE_ACCOUNT_FILE}:/app/service_account.json:ro"
+fi
+
 docker run -d \
     --name "$CONTAINER_NAME" \
     --restart unless-stopped \
     -p "$PORT:8000" \
     -e APP_ENV="$ENVIRONMENT" \
+    -e GOOGLE_SERVICE_ACCOUNT_FILE="/app/service_account.json" \
     --env-file "$ENV_FILE" \
     -v "${APP_NAME}_data:/app/data" \
+    $SERVICE_ACCOUNT_MOUNT \
     -m "$MEMORY" \
     --cpus="$CPUS" \
     "$IMAGE_TAG"
