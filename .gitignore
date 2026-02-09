@@ -1,0 +1,54 @@
+# =============================================================================
+# MCP Agent Memory Server - Gitignore
+# =============================================================================
+
+# Memory file (treated as database, not code)
+AGENTS.md
+
+# Secrets and credentials
+.env
+service_account.json
+*.pem
+*.key
+
+# Logs
+*.log
+audit.log
+backup.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
