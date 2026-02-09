@@ -1,2 +1,4 @@
 # mcp-agents-md
-MCP server for continuous AGENT.md learning
+
+MCP server that allows your agents to continuously update their AGENTS.md file.
+
